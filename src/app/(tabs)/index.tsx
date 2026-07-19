@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import Animated, { FadeInDown, ZoomIn } from 'react-native-reanimated';
 import { useColorScheme } from 'nativewind';
 import Svg, { Path, Circle } from 'react-native-svg';
@@ -66,6 +66,7 @@ const UsersIcon: React.FC<{ size?: number; color?: string }> = ({ size = 20, col
 };
 
 const HomeScreen: React.FC = () => {
+  const router = useRouter();
   const { colorScheme } = useColorScheme();
   const iconColor = colorScheme === 'dark' ? '#818cf8' : '#4f46e5';
   const buttonSecondaryIconColor = colorScheme === 'dark' ? '#ffffff' : '#0f172a';
@@ -105,6 +106,7 @@ const HomeScreen: React.FC = () => {
         <View className="w-full gap-4 mb-8">
           <Animated.View entering={FadeInDown.delay(500).duration(600)} className="w-full">
             <Pressable 
+              onPress={() => router.push('/host' as any)}
               className="w-full bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 rounded-2xl py-4 flex-row items-center justify-center gap-2 shadow-lg shadow-indigo-600/30 border border-indigo-500/20 active:scale-[0.98] transition-all"
             >
               <ThemedText className="text-white text-lg font-bold tracking-wide">
@@ -115,7 +117,8 @@ const HomeScreen: React.FC = () => {
           </Animated.View>
 
           <Animated.View entering={FadeInDown.delay(650).duration(600)} className="w-full">
-            <Pressable 
+            <Pressable
+              onPress={() => router.push('/join' as any)}
               className="w-full bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 active:bg-slate-100 dark:active:bg-slate-800/50 rounded-2xl py-4 flex-row items-center justify-center gap-2 border border-slate-200 dark:border-slate-800 shadow-sm active:scale-[0.98] transition-all"
             >
               <ThemedText className="text-slate-900 dark:text-white text-lg font-bold tracking-wide">

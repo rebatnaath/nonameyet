@@ -1,26 +1,30 @@
 import '../global.css';
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { useColorScheme, cssInterop } from 'nativewind';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Stack } from 'expo-router';
 
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import AppTabs from '@/components/app-tabs';
-
-// Enable NativeWind support for SafeAreaView from react-native-safe-area-context
-cssInterop(SafeAreaView, {
-  className: 'style',
-});
-
-SplashScreen.preventAutoHideAsync();
-
-export default function TabLayout() {
-  const { colorScheme } = useColorScheme();
+export default function RootLayout() {
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <AnimatedSplashOverlay />
-      <AppTabs />
-    </ThemeProvider>
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="(tabs)" />
+      <Stack.Screen
+        name="host"
+        options={{ presentation: 'modal', gestureEnabled: false }}
+      />
+      <Stack.Screen
+        name="join"
+        options={{ presentation: 'modal', gestureEnabled: false }}
+      />
+      <Stack.Screen
+        name="lobby"
+        options={{ gestureEnabled: false }}
+      />
+      <Stack.Screen
+        name="upload"
+        options={{ presentation: 'modal', gestureEnabled: false }}
+      />
+      <Stack.Screen
+        name="reveal"
+        options={{ gestureEnabled: false }}
+      />
+    </Stack>
   );
 }
-

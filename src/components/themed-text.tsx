@@ -1,73 +1,45 @@
-import { Platform, StyleSheet, Text, type TextProps } from 'react-native';
-
-import { Fonts, ThemeColor } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
+import { Text, type TextProps } from 'react-native';
 
 export type ThemedTextProps = TextProps & {
   type?: 'default' | 'title' | 'small' | 'smallBold' | 'subtitle' | 'link' | 'linkPrimary' | 'code';
-  themeColor?: ThemeColor;
 };
 
-export function ThemedText({ style, type = 'default', themeColor, ...rest }: ThemedTextProps) {
-  const theme = useTheme();
+export function ThemedText({ style, type = 'default', className = '', ...rest }: ThemedTextProps) {
+  let baseClass = 'text-slate-900 dark:text-white font-medium';
+
+  switch (type) {
+    case 'title':
+      baseClass = 'text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white';
+      break;
+    case 'subtitle':
+      baseClass = 'text-2xl font-bold tracking-tight text-slate-900 dark:text-white';
+      break;
+    case 'small':
+      baseClass = 'text-sm text-slate-500 dark:text-slate-400';
+      break;
+    case 'smallBold':
+      baseClass = 'text-sm font-bold text-slate-800 dark:text-slate-200';
+      break;
+    case 'link':
+      baseClass = 'text-sm text-slate-500 dark:text-slate-400 underline';
+      break;
+    case 'linkPrimary':
+      baseClass = 'text-sm text-indigo-600 dark:text-indigo-400 font-semibold';
+      break;
+    case 'code':
+      baseClass = 'font-mono text-xs bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-slate-800 dark:text-slate-200';
+      break;
+    case 'default':
+    default:
+      baseClass = 'text-base text-slate-700 dark:text-slate-300';
+      break;
+  }
 
   return (
     <Text
-      style={[
-        { color: theme[themeColor ?? 'text'] },
-        type === 'default' && styles.default,
-        type === 'title' && styles.title,
-        type === 'small' && styles.small,
-        type === 'smallBold' && styles.smallBold,
-        type === 'subtitle' && styles.subtitle,
-        type === 'link' && styles.link,
-        type === 'linkPrimary' && styles.linkPrimary,
-        type === 'code' && styles.code,
-        style,
-      ]}
+      className={`${baseClass} ${className}`}
+      style={style}
       {...rest}
     />
   );
 }
-
-const styles = StyleSheet.create({
-  small: {
-    fontSize: 14,
-    lineHeight: 20,
-    fontWeight: 500,
-  },
-  smallBold: {
-    fontSize: 14,
-    lineHeight: 20,
-    fontWeight: 700,
-  },
-  default: {
-    fontSize: 16,
-    lineHeight: 24,
-    fontWeight: 500,
-  },
-  title: {
-    fontSize: 48,
-    fontWeight: 600,
-    lineHeight: 52,
-  },
-  subtitle: {
-    fontSize: 32,
-    lineHeight: 44,
-    fontWeight: 600,
-  },
-  link: {
-    lineHeight: 30,
-    fontSize: 14,
-  },
-  linkPrimary: {
-    lineHeight: 30,
-    fontSize: 14,
-    color: '#3c87f7',
-  },
-  code: {
-    fontFamily: Fonts.mono,
-    fontWeight: Platform.select({ android: 700 }) ?? 500,
-    fontSize: 12,
-  },
-});

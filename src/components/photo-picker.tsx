@@ -1,6 +1,7 @@
 import { View, TouchableOpacity, Image } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
+import { ImageIcon } from '@/components/ui/icons';
 
 import { ThemedText } from './themed-text';
 
@@ -63,7 +64,7 @@ export function PhotoPicker({ onPhotoSelect, onPhotoRemove, selectedUri }: Photo
         className="w-full bg-slate-100 dark:bg-slate-800/80 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-[32px] h-64 items-center justify-center p-6 active:opacity-70"
       >
         <View className="w-16 h-16 bg-indigo-100 dark:bg-indigo-900/30 rounded-full items-center justify-center mb-4">
-          <ThemedText className="text-2xl">🖼️</ThemedText>
+          <ImageIcon size={28} color="#4f46e5" />
         </View>
         <ThemedText className="text-slate-900 dark:text-white text-xl font-black mb-2 text-center">
           Choose an Image

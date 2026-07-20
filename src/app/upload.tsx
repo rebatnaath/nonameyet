@@ -6,11 +6,13 @@ import Animated, { FadeInDown, ZoomIn } from 'react-native-reanimated';
 import * as FileSystem from 'expo-file-system/legacy';
 import { decode } from 'base64-arraybuffer';
 import { supabase } from '@/lib/supabase';
+import { Ionicons } from '@expo/vector-icons';
 
 import { ThemedText } from '@/components/themed-text';
 import { PhotoPicker } from '@/components/photo-picker';
-import { useTempPhotoStorage, type TempPhoto } from '@/hooks/use-temp-photo-storage';
+import { useTempPhotoStorage } from '@/hooks/use-temp-photo-storage';
 import { useRoom } from '@/hooks/use-room';
+import { ModernLoader } from '@/components/ui/modern-loader';
 
 export default function UploadScreen() {
   const router = useRouter();
@@ -68,9 +70,11 @@ export default function UploadScreen() {
       }
       const submittedCount = room.submittedPlayerIds.length;
       const total = room.players.length;
-      const skipped = room.players.filter((p) => !room.submittedPlayerIds.includes(p.id)).length;
-      if (timedOut || submitted) {
-        setWaitingMessage(`${submittedCount}/${total} submitted, ${skipped} skipped`);
+      if (timedOut) {
+        const skipped = room.players.filter((p) => !room.submittedPlayerIds.includes(p.id)).length;
+        setWaitingMessage(`Time's up! ${submittedCount}/${total} submitted, ${skipped} skipped`);
+      } else {
+        setWaitingMessage(`Waiting for other players... (${submittedCount}/${total} submitted)`);
       }
       // Check global deadline
       if (room.submissionDeadline > 0 && Date.now() > room.submissionDeadline) {
@@ -79,7 +83,7 @@ export default function UploadScreen() {
       }
     }, 2000);
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
-  }, [submitted, timedOut, roomCode, playerId]);
+  }, [submitted, timedOut, roomCode, playerId, getRoom, router]);
 
   const handlePhotoSelect = useCallback((photo: { uri: string; fileName: string; mimeType: string }) => {
     setSelectedUri(photo.uri);
@@ -123,44 +127,53 @@ export default function UploadScreen() {
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;
   const timerStyle = timeLeft <= 10 ? { color: '#ef4444' } : {};
+  const progress = timeLeft / totalSeconds;
 
   const storedCount = Array.from(photos.entries()).length;
 
   if (submitted) {
     return (
       <ScreenWrapper options={{ headerShown: false, gestureEnabled: false }}>
-        <ScrollView className="flex-1 px-6 py-8">
-          <View className="items-center">
-            <Animated.View entering={ZoomIn.duration(600).springify()}>
-              <View className="bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 rounded-[32px] p-8 items-center shadow-xl max-w-sm mb-6">
-                <ThemedText type="title" className="text-center mb-4">
+        <View className="flex-1 items-center justify-center px-6">
+          <View className="items-center w-full max-w-md">
+            <Animated.View entering={ZoomIn.duration(600).springify()} className="w-full">
+              <View className="bg-white/80 dark:bg-slate-900/80 border border-slate-200/50 dark:border-slate-800/50 rounded-3xl p-8 items-center shadow-md w-full backdrop-blur-md mb-6">
+                
+                <View className="mb-6 items-center">
+                  <ModernLoader size={60} color="#4f46e5" strokeWidth={3.5} />
+                </View>
+
+                <ThemedText type="subtitle" className="text-center font-black mb-2">
                   Photo Submitted!
                 </ThemedText>
-                <ThemedText className="text-center text-slate-500 dark:text-slate-400 mb-4">
+                
+                <ThemedText className="text-center text-slate-500 dark:text-slate-400 mb-6 text-sm">
                   {waitingMessage}
                 </ThemedText>
-                <View className="w-16 h-16 border-4 border-indigo-400 border-t-transparent rounded-full animate-spin mb-4" />
-                <ThemedText className="text-center text-sm text-slate-400">
-                  {storedCount} photo{storedCount !== 1 ? 's' : ''} in storage
-                </ThemedText>
+                
+                <View className="w-full bg-slate-55 dark:bg-slate-850 p-4 rounded-2xl border border-slate-100 dark:border-slate-800/40">
+                  <ThemedText className="text-center text-xs text-slate-400 font-mono">
+                    {storedCount} photo{storedCount !== 1 ? 's' : ''} saved locally in storage
+                  </ThemedText>
+                </View>
               </View>
             </Animated.View>
 
             <TouchableOpacity
               onPress={() => setShowDebug(!showDebug)}
-              className="bg-slate-200 dark:bg-slate-800 rounded-xl py-2 px-6 mb-6 active:opacity-70"
+              className="bg-slate-100 dark:bg-slate-850 border border-slate-200/30 rounded-xl py-3 px-6 mb-6 active:opacity-75"
             >
-              <ThemedText className="text-sm font-semibold">
-                {showDebug ? 'Hide' : 'Show'} Stored Photos ({storedCount})
+              <ThemedText className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                {showDebug ? 'Hide Diagnostics' : 'Show Diagnostics'} ({storedCount} Files)
               </ThemedText>
             </TouchableOpacity>
 
             {showDebug && (
-              <View className="w-full max-w-sm gap-4">
+              <ScrollView className="max-h-64 w-full gap-4 mb-4">
                 {Array.from(photos.entries()).map(([key, photo]) => (
                   <View
                     key={key}
-                    className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm"
+                    className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm mb-3"
                   >
                     <Image
                       source={{ uri: photo.uri }}
@@ -183,87 +196,107 @@ export default function UploadScreen() {
                     No photos in storage yet.
                   </ThemedText>
                 )}
-              </View>
+              </ScrollView>
             )}
           </View>
-        </ScrollView>
+        </View>
       </ScreenWrapper>
     );
   }
 
   return (
     <ScreenWrapper options={{ headerShown: false, gestureEnabled: false }}>
-
-      <View className="flex-1 px-6 py-8 w-full max-w-md mx-auto justify-between">
-        {/* Header */}
-        <Animated.View entering={FadeInDown.duration(600)} className="items-center">
-          <ThemedText type="subtitle" className="font-black tracking-tight mb-1">
-            Submit Your Photo
-          </ThemedText>
-          <View className="flex-row items-center gap-2 mb-2">
-            <ThemedText type="small" className="text-slate-400">
-              Theme:
+      <ScrollView contentContainerStyle={{ flexGrow: 1 }} className="flex-1 px-6 py-8">
+        <View className="flex-1 w-full max-w-md mx-auto justify-between gap-6 pb-8">
+          
+          {/* Header */}
+          <Animated.View entering={FadeInDown.duration(600)} className="items-center w-full gap-2">
+            <ThemedText type="subtitle" className="font-black tracking-tight text-center">
+              Submit Your Photo
             </ThemedText>
-            <View className="bg-indigo-100 dark:bg-indigo-900/40 rounded-full px-3 py-0.5">
-              <ThemedText className="text-indigo-600 dark:text-indigo-400 text-sm font-bold">
+            <View className="flex-row items-center gap-2 bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100/35 rounded-full px-4 py-1.5 mt-1 shadow-sm">
+              <Ionicons name="sparkles-outline" size={14} color="#4f46e5" />
+              <ThemedText type="small" className="text-slate-400 text-xs font-semibold">
+                Active Theme:
+              </ThemedText>
+              <ThemedText className="text-indigo-600 dark:text-indigo-400 text-xs font-black">
                 {theme}
               </ThemedText>
             </View>
-          </View>
-        </Animated.View>
-
-        {/* Timer */}
-        <Animated.View entering={FadeInDown.delay(150).duration(600)} className="items-center">
-          <View className="bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 rounded-[24px] p-6 items-center shadow-lg w-full">
-            <ThemedText type="small" className="text-slate-400 mb-2">
-              Time Remaining
-            </ThemedText>
-            <ThemedText 
-              className="text-5xl font-black tabular-nums text-slate-900 dark:text-white"
-              style={timerStyle}
-            >
-              {minutes}:{seconds.toString().padStart(2, '0')}
-            </ThemedText>
-          </View>
-        </Animated.View>
-
-        {/* Photo Picker Area */}
-        <Animated.View entering={FadeInDown.delay(300).duration(600)} className="items-center">
-          {timedOut && !selectedPhoto ? (
-            <View className="items-center gap-4">
-              <View className="w-20 h-20 rounded-full bg-red-100 dark:bg-red-900/30 items-center justify-center">
-                <ThemedText className="text-3xl">⏰</ThemedText>
-              </View>
-              <ThemedText className="text-center text-red-500 font-bold text-lg">
-                Time's Up!
-              </ThemedText>
-              <ThemedText className="text-center text-slate-500 dark:text-slate-400">
-                You didn't submit a photo in time. You'll be skipped for this round.
-              </ThemedText>
-            </View>
-          ) : (
-            <PhotoPicker
-              onPhotoSelect={handlePhotoSelect}
-              onPhotoRemove={handlePhotoRemove}
-              selectedUri={selectedUri}
-            />
-          )}
-        </Animated.View>
-
-        {/* Submit Button */}
-        {selectedPhoto && !timedOut && (
-          <Animated.View entering={FadeInDown.delay(450).duration(600)}>
-            <TouchableOpacity
-              onPress={handleSubmit}
-              className="w-full bg-indigo-600 rounded-2xl py-4 items-center shadow-lg shadow-indigo-600/30 active:opacity-80"
-            >
-              <ThemedText className="text-white text-lg font-bold tracking-wide">
-                Submit Photo
-              </ThemedText>
-            </TouchableOpacity>
           </Animated.View>
-        )}
-      </View>
+
+          {/* Timer Card */}
+          <Animated.View entering={FadeInDown.delay(150).duration(600)} className="w-full">
+            <View className="bg-white/80 dark:bg-slate-900/80 border border-slate-200/50 dark:border-slate-800/50 rounded-3xl p-5 items-center shadow-md w-full backdrop-blur-md">
+              <View className="flex-row items-center gap-2 mb-2">
+                <Ionicons name="time-outline" size={16} color={timeLeft <= 10 ? '#ef4444' : '#64748b'} />
+                <ThemedText type="small" className="text-slate-400 font-bold uppercase tracking-wider text-[10px]">
+                  Submission Window
+                </ThemedText>
+              </View>
+              
+              <ThemedText 
+                className="text-4xl font-black tabular-nums tracking-wide text-slate-900 dark:text-white my-1"
+                style={timerStyle}
+              >
+                {minutes}:{seconds.toString().padStart(2, '0')}
+              </ThemedText>
+
+              {/* Elegant Progress Bar */}
+              <View className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden mt-3">
+                <View 
+                  style={{
+                    width: `${progress * 100}%`,
+                    backgroundColor: timeLeft <= 10 ? '#ef4444' : timeLeft <= 30 ? '#f59e0b' : '#4f46e5',
+                    height: '100%',
+                    borderRadius: 9999
+                  }} 
+                />
+              </View>
+            </View>
+          </Animated.View>
+
+          {/* Photo Picker Area */}
+          <Animated.View entering={FadeInDown.delay(300).duration(600)} className="items-center w-full">
+            {timedOut && !selectedPhoto ? (
+              <View className="items-center gap-4 bg-red-50/50 dark:bg-red-950/10 border border-red-200/30 rounded-3xl p-6 w-full">
+                <View className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-950/50 items-center justify-center">
+                  <Ionicons name="alert-circle" size={32} color="#ef4444" />
+                </View>
+                <ThemedText className="text-center text-red-500 font-bold text-lg">
+                  Time's Up!
+                </ThemedText>
+                <ThemedText className="text-center text-slate-500 dark:text-slate-400 text-sm">
+                  You didn't submit a photo in time. You will be skipped for this game.
+                </ThemedText>
+              </View>
+            ) : (
+              <PhotoPicker
+                onPhotoSelect={handlePhotoSelect}
+                onPhotoRemove={handlePhotoRemove}
+                selectedUri={selectedUri}
+              />
+            )}
+          </Animated.View>
+
+          {/* Submit Button */}
+          {selectedPhoto && !timedOut ? (
+            <Animated.View entering={FadeInDown.delay(450).duration(600)} className="w-full">
+              <TouchableOpacity
+                onPress={handleSubmit}
+                className="w-full flex-row items-center justify-center gap-2 bg-indigo-600 rounded-2xl py-4 active:opacity-75 shadow-md shadow-indigo-600/20"
+              >
+                <Ionicons name="checkmark-circle-outline" size={20} color="#ffffff" />
+                <ThemedText className="text-white text-base font-black uppercase tracking-wider">
+                  Confirm & Submit
+                </ThemedText>
+              </TouchableOpacity>
+            </Animated.View>
+          ) : (
+            <View className="h-14 w-full" /> /* Spacing helper */
+          )}
+        </View>
+      </ScrollView>
     </ScreenWrapper>
   );
 }

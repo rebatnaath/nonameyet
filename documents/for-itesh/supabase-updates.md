@@ -45,3 +45,19 @@ CREATE POLICY "Allow public delete players" ON public.players FOR DELETE USING (
 ALTER PUBLICATION supabase_realtime ADD TABLE public.rooms;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.players;
 ```
+
+
+## alter tables
+
+ALTER TABLE public.rooms ADD COLUMN submitted_player_ids TEXT[] NOT NULL DEFAULT '{}';
+ALTER TABLE public.rooms ADD COLUMN submission_deadline BIGINT NOT NULL DEFAULT 0;
+
+-- 6. Create Storage Bucket for Photos
+INSERT INTO storage.buckets (id, name, public) VALUES ('game_photos', 'game_photos', true) ON CONFLICT DO NOTHING;
+
+-- 7. Allow public access to the bucket
+CREATE POLICY "Public Access" ON storage.objects FOR SELECT USING (bucket_id = 'game_photos');
+CREATE POLICY "Public Upload" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'game_photos');
+CREATE POLICY "Public Update" ON storage.objects FOR UPDATE USING (bucket_id = 'game_photos');
+CREATE POLICY "Public Delete" ON storage.objects FOR DELETE USING (bucket_id = 'game_photos');
+

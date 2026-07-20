@@ -1,5 +1,5 @@
 import '../../global.css';
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
+import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import * as SplashScreen from 'expo-splash-screen';
 import { useColorScheme, cssInterop } from 'nativewind';
 import { SafeAreaView } from 'react-native-safe-area-context';

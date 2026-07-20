@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, TextInput, Pressable } from 'react-native';
+import { View, TextInput, TouchableOpacity } from 'react-native';
 import { Stack, router } from 'expo-router';
 import { ScreenWrapper } from '@/components/screen-wrapper';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -64,23 +64,26 @@ export default function JoinScreen() {
             <ThemedText className="text-red-500 text-sm text-center">{error}</ThemedText>
           ) : null}
 
-          <Pressable
-            onPress={handleJoin}
-            disabled={!code.trim() || !name.trim()}
-            className={`w-full rounded-2xl py-4 items-center ${
-              code.trim() && name.trim()
-                ? 'bg-indigo-600 active:bg-indigo-700 shadow-lg shadow-indigo-600/30'
-                : 'bg-slate-300 dark:bg-slate-800'
-            }`}
-          >
-            <ThemedText className="text-white text-lg font-bold">
-              Join Room
-            </ThemedText>
-          </Pressable>
+          <View style={[
+            { width: '100%', borderRadius: 16, overflow: 'hidden' },
+            code.trim() && name.trim() ? { backgroundColor: '#4f46e5' } : { backgroundColor: '#cbd5e1' }
+          ]}>
+            <TouchableOpacity
+              onPress={handleJoin}
+              disabled={!code.trim() || !name.trim()}
+              style={{ width: '100%', paddingVertical: 16, alignItems: 'center' }}
+            >
+              <ThemedText className="text-white text-lg font-bold">
+                Join Room
+              </ThemedText>
+            </TouchableOpacity>
+          </View>
 
-          <Pressable onPress={() => router.back()} className="active:opacity-70">
-            <ThemedText type="linkPrimary">Back</ThemedText>
-          </Pressable>
+          <View className="mt-4">
+            <TouchableOpacity onPress={() => router.back()} style={{ padding: 8 }}>
+              <ThemedText type="linkPrimary">Back</ThemedText>
+            </TouchableOpacity>
+          </View>
         </Animated.View>
       </View>
     </ScreenWrapper>

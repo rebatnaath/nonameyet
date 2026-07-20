@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { View, Pressable, ScrollView } from 'react-native';
+import { View, TouchableOpacity, ScrollView } from 'react-native';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import { ScreenWrapper } from '@/components/screen-wrapper';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -93,9 +93,9 @@ export default function LobbyScreen() {
           <ThemedText className="text-center text-slate-500 dark:text-slate-400 mb-4">
             Room not found
           </ThemedText>
-          <Pressable onPress={() => router.back()} className="bg-indigo-600 rounded-2xl py-3 px-8 active:opacity-70">
+          <TouchableOpacity onPress={() => router.back()} className="bg-indigo-600 rounded-2xl py-3 px-8 active:opacity-70">
             <ThemedText className="text-white font-bold">Back</ThemedText>
-          </Pressable>
+          </TouchableOpacity>
         </View>
       </ScreenWrapper>
     );
@@ -117,14 +117,14 @@ export default function LobbyScreen() {
               <ThemedText className="text-4xl font-black tracking-[0.3em] text-indigo-600 dark:text-indigo-400">
                 {room.code}
               </ThemedText>
-              <Pressable
+              <TouchableOpacity
                 onPress={copyCode}
                 className="mt-2 bg-indigo-100 dark:bg-indigo-900/40 rounded-full px-4 py-1 active:opacity-70"
               >
                 <ThemedText className="text-indigo-600 dark:text-indigo-400 text-sm font-semibold">
                   {copied ? 'Copied!' : 'Copy Code'}
                 </ThemedText>
-              </Pressable>
+              </TouchableOpacity>
             </View>
           </Animated.View>
 
@@ -142,9 +142,13 @@ export default function LobbyScreen() {
               {room.players.map((player, idx) => (
                 <View
                   key={player.id}
-                  className={`flex-row items-center gap-3 py-2.5 ${idx < room.players.length - 1 ? 'border-b border-slate-100 dark:border-slate-800' : ''}`}
+                  className="flex-row items-center gap-3 py-2.5"
+                  style={idx < room.players.length - 1 ? { borderBottomWidth: 1, borderBottomColor: '#f1f5f9' } : {}}
                 >
-                  <View className={`w-8 h-8 rounded-full items-center justify-center ${player.isHost ? 'bg-indigo-100 dark:bg-indigo-900/50' : 'bg-slate-100 dark:bg-slate-800'}`}>
+                  <View 
+                    className="w-8 h-8 rounded-full items-center justify-center"
+                    style={player.isHost ? { backgroundColor: '#e0e7ff' } : { backgroundColor: '#f1f5f9' }}
+                  >
                     <ThemedText className="text-sm font-bold">
                       {player.id === currentPlayerId ? '★' : '●'}
                     </ThemedText>
@@ -190,13 +194,13 @@ export default function LobbyScreen() {
                     <View className="flex-row items-center justify-between pl-4">
                       <ThemedText type="small" className="text-slate-400">Skip count</ThemedText>
                       <View className="flex-row items-center gap-3">
-                        <Pressable onPress={() => adjustSkipCount(-1)} className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 items-center justify-center active:opacity-70">
+                        <TouchableOpacity onPress={() => adjustSkipCount(-1)} className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 items-center justify-center active:opacity-70">
                           <ThemedText className="font-bold">-</ThemedText>
-                        </Pressable>
+                        </TouchableOpacity>
                         <ThemedText className="font-bold text-lg w-6 text-center">{room.settings.fixedSkipCount}</ThemedText>
-                        <Pressable onPress={() => adjustSkipCount(1)} className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 items-center justify-center active:opacity-70">
+                        <TouchableOpacity onPress={() => adjustSkipCount(1)} className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 items-center justify-center active:opacity-70">
                           <ThemedText className="font-bold">+</ThemedText>
-                        </Pressable>
+                        </TouchableOpacity>
                       </View>
                     </View>
                   )}
@@ -205,13 +209,13 @@ export default function LobbyScreen() {
                   <View className="flex-row items-center justify-between">
                     <ThemedText type="small" className="text-slate-400">Min players</ThemedText>
                     <View className="flex-row items-center gap-3">
-                      <Pressable onPress={() => adjustMinPlayers(room, updateSettings, -1)} className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 items-center justify-center active:opacity-70">
+                      <TouchableOpacity onPress={() => adjustMinPlayers(room, updateSettings, -1)} className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 items-center justify-center active:opacity-70">
                         <ThemedText className="font-bold">-</ThemedText>
-                      </Pressable>
+                      </TouchableOpacity>
                       <ThemedText className="font-bold text-lg w-6 text-center">{room.settings.minPlayers}</ThemedText>
-                      <Pressable onPress={() => adjustMinPlayers(room, updateSettings, 1)} className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 items-center justify-center active:opacity-70">
+                      <TouchableOpacity onPress={() => adjustMinPlayers(room, updateSettings, 1)} className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 items-center justify-center active:opacity-70">
                         <ThemedText className="font-bold">+</ThemedText>
-                      </Pressable>
+                      </TouchableOpacity>
                     </View>
                   </View>
                 </>
@@ -229,29 +233,30 @@ export default function LobbyScreen() {
           {/* Actions */}
           <Animated.View entering={FadeInDown.delay(300).duration(600)} className="gap-3 pb-8">
             {isHost && (
-              <Pressable
-                onPress={handleStart}
-                disabled={!canStart}
-                className={`w-full rounded-2xl py-4 items-center ${
-                  canStart
-                    ? 'bg-indigo-600 active:bg-indigo-700 shadow-lg shadow-indigo-600/30'
-                    : 'bg-slate-300 dark:bg-slate-800'
-                }`}
-              >
-                <ThemedText className="text-white text-lg font-bold">
-                  {room.players.length < room.settings.minPlayers
-                    ? `Waiting for players (${room.players.length}/${room.settings.minPlayers})`
-                    : 'Start Game'}
-                </ThemedText>
-              </Pressable>
+              <View style={[
+                { width: '100%', borderRadius: 16, overflow: 'hidden' },
+                canStart ? { backgroundColor: '#4f46e5' } : { backgroundColor: '#cbd5e1' }
+              ]}>
+                <TouchableOpacity
+                  onPress={handleStart}
+                  disabled={!canStart}
+                  style={{ width: '100%', paddingVertical: 16, alignItems: 'center' }}
+                >
+                  <ThemedText className="text-white text-lg font-bold">
+                    {room.players.length < room.settings.minPlayers
+                      ? `Waiting for players (${room.players.length}/${room.settings.minPlayers})`
+                      : 'Start Game'}
+                  </ThemedText>
+                </TouchableOpacity>
+              </View>
             )}
 
-            <Pressable
+            <TouchableOpacity
               onPress={handleLeave}
               className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl py-3 items-center active:opacity-70"
             >
               <ThemedText className="text-red-500 font-semibold">Leave Room</ThemedText>
-            </Pressable>
+            </TouchableOpacity>
           </Animated.View>
 
         </View>
@@ -268,17 +273,18 @@ type SettingRowProps = {
 
 function SettingRow({ label, value, onPress }: SettingRowProps) {
   return (
-    <Pressable
+    <TouchableOpacity
       onPress={onPress}
       disabled={!onPress}
-      className={`flex-row items-center justify-between py-1 ${onPress ? 'active:opacity-70' : ''}`}
+      className="flex-row items-center justify-between py-1"
+      style={onPress ? { opacity: 1 } : { opacity: 0.5 }}
     >
       <ThemedText type="small" className="text-slate-400">{label}</ThemedText>
       <View className="flex-row items-center gap-1">
         <ThemedText className="font-semibold text-slate-800 dark:text-slate-200 capitalize">{value}</ThemedText>
         {onPress && <ThemedText type="small" className="text-slate-300 ml-1">›</ThemedText>}
       </View>
-    </Pressable>
+    </TouchableOpacity>
   );
 }
 

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, TextInput, Pressable } from 'react-native';
+import { View, TextInput, TouchableOpacity } from 'react-native';
 import { Stack, router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -39,7 +39,7 @@ export default function HostScreen() {
             className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl px-5 py-4 text-lg text-slate-900 dark:text-white"
           />
 
-          <Pressable
+          <TouchableOpacity
             onPress={handleCreate}
             disabled={!name.trim()}
             style={{ width: '100%', borderRadius: 16, paddingVertical: 16, alignItems: 'center', backgroundColor: name.trim() ? '#4f46e5' : '#cbd5e1' }}
@@ -47,11 +47,11 @@ export default function HostScreen() {
             <ThemedText className="text-white text-lg font-bold">
               Create Room
             </ThemedText>
-          </Pressable>
+          </TouchableOpacity>
 
-          <Pressable onPress={() => router.back()} style={{ marginTop: 16 }}>
+          <TouchableOpacity onPress={() => router.back()} style={{ marginTop: 16 }}>
             <ThemedText type="linkPrimary">Back</ThemedText>
-          </Pressable>
+          </TouchableOpacity>
         </Animated.View>
       </View>
     </SafeAreaView>

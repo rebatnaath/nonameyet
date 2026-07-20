@@ -1,5 +1,11 @@
 import '../global.css';
 import { Stack } from 'expo-router';
+import { configureReanimatedLogger, ReanimatedLogLevel } from 'react-native-reanimated';
+
+configureReanimatedLogger({
+  level: ReanimatedLogLevel.warn,
+  strict: false,
+});
 
 export default function RootLayout() {
   return (
@@ -7,11 +13,11 @@ export default function RootLayout() {
       <Stack.Screen name="(tabs)" />
       <Stack.Screen
         name="host"
-        options={{ presentation: 'modal', gestureEnabled: false }}
+        options={{ gestureEnabled: false }}
       />
       <Stack.Screen
         name="join"
-        options={{ presentation: 'modal', gestureEnabled: false }}
+        options={{ gestureEnabled: false }}
       />
       <Stack.Screen
         name="lobby"
@@ -19,7 +25,7 @@ export default function RootLayout() {
       />
       <Stack.Screen
         name="upload"
-        options={{ presentation: 'modal', gestureEnabled: false }}
+        options={{ gestureEnabled: false }}
       />
       <Stack.Screen
         name="reveal"

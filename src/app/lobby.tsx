@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { View, Pressable, ScrollView } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
+import { ScreenWrapper } from '@/components/screen-wrapper';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { ThemedText } from '@/components/themed-text';
@@ -88,8 +88,7 @@ export default function LobbyScreen() {
 
   if (!room) {
     return (
-      <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-950">
-        <Stack.Screen options={{ headerShown: false }} />
+      <ScreenWrapper options={{ headerShown: false }}>
         <View className="flex-1 items-center justify-center px-6">
           <ThemedText className="text-center text-slate-500 dark:text-slate-400 mb-4">
             Room not found
@@ -98,15 +97,14 @@ export default function LobbyScreen() {
             <ThemedText className="text-white font-bold">Back</ThemedText>
           </Pressable>
         </View>
-      </SafeAreaView>
+      </ScreenWrapper>
     );
   }
 
   const canStart = isHost && room.players.length >= room.settings.minPlayers;
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-950">
-      <Stack.Screen options={{ headerShown: false, gestureEnabled: false }} />
+    <ScreenWrapper options={{ headerShown: false, gestureEnabled: false }}>
       <ScrollView className="flex-1 px-6 py-8">
         <View className="w-full max-w-md mx-auto gap-6">
 
@@ -258,7 +256,7 @@ export default function LobbyScreen() {
 
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </ScreenWrapper>
   );
 }
 

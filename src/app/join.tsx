@@ -1,14 +1,13 @@
 import { useState } from 'react';
 import { View, TextInput, Pressable } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, router } from 'expo-router';
+import { ScreenWrapper } from '@/components/screen-wrapper';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { ThemedText } from '@/components/themed-text';
 import { useRoom } from '@/hooks/use-room';
 
 export default function JoinScreen() {
-  const router = useRouter();
   const { joinRoom, exists } = useRoom();
   const [code, setCode] = useState('');
   const [name, setName] = useState('');
@@ -31,8 +30,7 @@ export default function JoinScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-950">
-      <Stack.Screen options={{ headerShown: false, presentation: 'modal' }} />
+    <ScreenWrapper options={{ headerShown: false, presentation: 'modal' }}>
       <View className="flex-1 px-6 py-12 w-full max-w-md mx-auto justify-center">
         <Animated.View entering={FadeInDown.duration(600)} className="items-center gap-6">
           <ThemedText type="subtitle" className="font-black tracking-tight text-center">
@@ -84,6 +82,6 @@ export default function JoinScreen() {
           </Pressable>
         </Animated.View>
       </View>
-    </SafeAreaView>
+    </ScreenWrapper>
   );
 }

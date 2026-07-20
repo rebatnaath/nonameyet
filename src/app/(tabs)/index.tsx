@@ -4,66 +4,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import Animated, { FadeInDown, ZoomIn } from 'react-native-reanimated';
 import { useColorScheme } from 'nativewind';
-import Svg, { Path, Circle } from 'react-native-svg';
 
 import { ThemedText } from '@/components/themed-text';
-
-const CameraIcon: React.FC<{ size?: number; color?: string }> = ({ size = 24, color = 'currentColor' }) => {
-  return (
-    <Svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke={color}
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <Path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-      <Circle cx="12" cy="13" r="4" />
-    </Svg>
-  );
-};
-
-const SparklesIcon: React.FC<{ size?: number; color?: string }> = ({ size = 20, color = 'currentColor' }) => {
-  return (
-    <Svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke={color}
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <Path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
-      <Path d="m5 3 1 2.5L8.5 6 6 7 5 9.5 4 7 1.5 6 4 5 5 3Z" />
-      <Path d="m19 17 1 2.5 2.5.5-2.5 1-1 2.5-1-2.5-2.5-1 2.5-1 1-2.5Z" />
-    </Svg>
-  );
-};
-
-const UsersIcon: React.FC<{ size?: number; color?: string }> = ({ size = 20, color = 'currentColor' }) => {
-  return (
-    <Svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke={color}
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <Path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-      <Circle cx="9" cy="7" r="4" />
-      <Path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-      <Path d="M16 3.13a4 4 0 0 1 0 7.75" />
-    </Svg>
-  );
-};
+import { CameraIcon, SparklesIcon, UsersIcon } from '@/components/ui/icons';
+import { ScreenWrapper } from '@/components/screen-wrapper';
 
 const HomeScreen: React.FC = () => {
   const router = useRouter();
@@ -72,8 +16,7 @@ const HomeScreen: React.FC = () => {
   const buttonSecondaryIconColor = colorScheme === 'dark' ? '#ffffff' : '#0f172a';
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-950">
-      <Stack.Screen options={{ headerShown: false }} />
+    <ScreenWrapper>
       
       <View className="flex-1 justify-between items-center px-6 py-12 w-full h-full max-w-md mx-auto">
         
@@ -133,7 +76,7 @@ const HomeScreen: React.FC = () => {
         <View className="h-4" />
 
       </View>
-    </SafeAreaView>
+    </ScreenWrapper>
   );
 };
 

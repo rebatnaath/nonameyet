@@ -1,14 +1,13 @@
 import { useState } from 'react';
 import { View, TextInput, Pressable } from 'react-native';
+import { Stack, router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Stack, useRouter } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { ThemedText } from '@/components/themed-text';
 import { useRoom } from '@/hooks/use-room';
 
 export default function HostScreen() {
-  const router = useRouter();
   const { createRoom } = useRoom();
   const [name, setName] = useState('');
 
@@ -21,7 +20,7 @@ export default function HostScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-950">
-      <Stack.Screen options={{ headerShown: false, presentation: 'modal' }} />
+      <Stack.Screen options={{ headerShown: false }} />
       <View className="flex-1 px-6 py-12 w-full max-w-md mx-auto justify-center">
         <Animated.View entering={FadeInDown.duration(600)} className="items-center gap-6">
           <ThemedText type="subtitle" className="font-black tracking-tight text-center">
@@ -43,18 +42,14 @@ export default function HostScreen() {
           <Pressable
             onPress={handleCreate}
             disabled={!name.trim()}
-            className={`w-full rounded-2xl py-4 items-center ${
-              name.trim()
-                ? 'bg-indigo-600 active:bg-indigo-700 shadow-lg shadow-indigo-600/30'
-                : 'bg-slate-300 dark:bg-slate-800'
-            }`}
+            style={{ width: '100%', borderRadius: 16, paddingVertical: 16, alignItems: 'center', backgroundColor: name.trim() ? '#4f46e5' : '#cbd5e1' }}
           >
             <ThemedText className="text-white text-lg font-bold">
               Create Room
             </ThemedText>
           </Pressable>
 
-          <Pressable onPress={() => router.back()} className="active:opacity-70">
+          <Pressable onPress={() => router.back()} style={{ marginTop: 16 }}>
             <ThemedText type="linkPrimary">Back</ThemedText>
           </Pressable>
         </Animated.View>

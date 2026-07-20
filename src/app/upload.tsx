@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Pressable, Image, ScrollView } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
+import { ScreenWrapper } from '@/components/screen-wrapper';
 import Animated, { FadeInDown, ZoomIn } from 'react-native-reanimated';
 
 import { ThemedText } from '@/components/themed-text';
@@ -103,8 +103,7 @@ export default function UploadScreen() {
 
   if (submitted) {
     return (
-      <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-950">
-        <Stack.Screen options={{ headerShown: false, gestureEnabled: false }} />
+      <ScreenWrapper options={{ headerShown: false, gestureEnabled: false }}>
         <ScrollView className="flex-1 px-6 py-8">
           <View className="items-center">
             <Animated.View entering={ZoomIn.duration(600).springify()}>
@@ -163,13 +162,12 @@ export default function UploadScreen() {
             )}
           </View>
         </ScrollView>
-      </SafeAreaView>
+      </ScreenWrapper>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-950">
-      <Stack.Screen options={{ headerShown: false, gestureEnabled: false }} />
+    <ScreenWrapper options={{ headerShown: false, gestureEnabled: false }}>
 
       <View className="flex-1 px-6 py-8 w-full max-w-md mx-auto justify-between">
         {/* Header */}
@@ -238,6 +236,6 @@ export default function UploadScreen() {
           </Animated.View>
         )}
       </View>
-    </SafeAreaView>
+    </ScreenWrapper>
   );
 }

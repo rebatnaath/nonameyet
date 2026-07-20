@@ -95,8 +95,13 @@ export default function UploadScreen() {
     setSelectedPhoto(null);
   }, []);
 
-  const handleSubmit = useCallback(async () => {
+  const handleSubmit = useCallback(() => {
     if (!selectedPhoto) return;
+    
+    // Instantly transition UI so it doesn't feel stuck
+    setSubmitted(true);
+    if (timerRef.current) clearInterval(timerRef.current);
+
     const pid = playerId || 'unknown';
     const key = `${roomCode}_${pid}`;
     storePhoto(key, {
@@ -104,24 +109,25 @@ export default function UploadScreen() {
       timestamp: Date.now(),
     });
     
-    try {
-      const base64 = await FileSystem.readAsStringAsync(selectedPhoto.uri, { encoding: 'base64' });
-      const filePath = `${roomCode}/${pid}.jpg`;
+    // Run the heavy base64 decoding and upload slightly after to let the UI update first
+    setTimeout(async () => {
+      try {
+        const base64 = await FileSystem.readAsStringAsync(selectedPhoto.uri, { encoding: 'base64' });
+        const filePath = `${roomCode}/${pid}.jpg`;
+        
+        await supabase.storage.from('game_photos').upload(filePath, decode(base64), {
+          contentType: selectedPhoto.mimeType || 'image/jpeg',
+          upsert: true
+        });
+        
+        const { data: urlData } = supabase.storage.from('game_photos').getPublicUrl(filePath);
+        await addPhotoUrl(roomCode, pid, urlData.publicUrl);
+      } catch (err) {
+        console.error('Failed to upload photo to Supabase:', err);
+      }
       
-      await supabase.storage.from('game_photos').upload(filePath, decode(base64), {
-        contentType: selectedPhoto.mimeType || 'image/jpeg',
-        upsert: true
-      });
-      
-      const { data: urlData } = supabase.storage.from('game_photos').getPublicUrl(filePath);
-      await addPhotoUrl(roomCode, pid, urlData.publicUrl);
-    } catch (err) {
-      console.error('Failed to upload photo to Supabase:', err);
-    }
-    
-    if (roomCode && pid) submitPhoto(roomCode, pid);
-    setSubmitted(true);
-    if (timerRef.current) clearInterval(timerRef.current);
+      if (roomCode && pid) submitPhoto(roomCode, pid);
+    }, 100);
   }, [selectedPhoto, storePhoto, roomCode, playerId, submitPhoto, addPhotoUrl]);
 
   const minutes = Math.floor(timeLeft / 60);

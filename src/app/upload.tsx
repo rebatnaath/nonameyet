@@ -10,14 +10,12 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { ThemedText } from '@/components/themed-text';
 import { PhotoPicker } from '@/components/photo-picker';
-import { useTempPhotoStorage } from '@/hooks/use-temp-photo-storage';
 import { useRoom } from '@/hooks/use-room';
 import { ModernLoader } from '@/components/ui/modern-loader';
 
 export default function UploadScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ room?: string; playerId?: string; theme?: string; duration?: string }>();
-  const { storePhoto, photos } = useTempPhotoStorage();
   const { getRoom, submitPhoto, subscribeToRoom, addPhotoUrl } = useRoom();
 
   const roomCode = params.room ?? '';
@@ -31,7 +29,6 @@ export default function UploadScreen() {
   const [submitted, setSubmitted] = useState(false);
   const [timedOut, setTimedOut] = useState(false);
   const [waitingMessage, setWaitingMessage] = useState('Waiting for other players...');
-  const [showDebug, setShowDebug] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -103,17 +100,13 @@ export default function UploadScreen() {
     if (timerRef.current) clearInterval(timerRef.current);
 
     const pid = playerId || 'unknown';
-    const key = `${roomCode}_${pid}`;
-    storePhoto(key, {
-      ...selectedPhoto,
-      timestamp: Date.now(),
-    });
     
     // Run the heavy base64 decoding and upload slightly after to let the UI update first
     setTimeout(async () => {
       try {
         const base64 = await FileSystem.readAsStringAsync(selectedPhoto.uri, { encoding: 'base64' });
-        const filePath = `${roomCode}/${pid}.jpg`;
+        // Use a timestamp to prevent caching old photos from previous rounds
+        const filePath = `${roomCode}/${pid}_${Date.now()}.jpg`;
         
         await supabase.storage.from('game_photos').upload(filePath, decode(base64), {
           contentType: selectedPhoto.mimeType || 'image/jpeg',
@@ -128,7 +121,7 @@ export default function UploadScreen() {
       
       if (roomCode && pid) submitPhoto(roomCode, pid);
     }, 100);
-  }, [selectedPhoto, storePhoto, roomCode, playerId, submitPhoto, addPhotoUrl]);
+  }, [selectedPhoto, roomCode, playerId, submitPhoto, addPhotoUrl]);
 
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;
@@ -153,57 +146,11 @@ export default function UploadScreen() {
                   Photo Submitted!
                 </ThemedText>
                 
-                <ThemedText className="text-center text-slate-500 dark:text-slate-400 mb-6 text-sm">
+                <ThemedText className="text-center text-slate-500 dark:text-slate-400 text-sm">
                   {waitingMessage}
                 </ThemedText>
-                
-                <View className="w-full bg-slate-55 dark:bg-slate-850 p-4 rounded-2xl border border-slate-100 dark:border-slate-800/40">
-                  <ThemedText className="text-center text-xs text-slate-400 font-mono">
-                    {storedCount} photo{storedCount !== 1 ? 's' : ''} saved locally in storage
-                  </ThemedText>
-                </View>
               </View>
             </Animated.View>
-
-            <TouchableOpacity
-              onPress={() => setShowDebug(!showDebug)}
-              className="bg-slate-100 dark:bg-slate-850 border border-slate-200/30 rounded-xl py-3 px-6 mb-6 active:opacity-75"
-            >
-              <ThemedText className="text-xs font-bold text-slate-500 dark:text-slate-400">
-                {showDebug ? 'Hide Diagnostics' : 'Show Diagnostics'} ({storedCount} Files)
-              </ThemedText>
-            </TouchableOpacity>
-
-            {showDebug && (
-              <ScrollView className="max-h-64 w-full gap-4 mb-4">
-                {Array.from(photos.entries()).map(([key, photo]) => (
-                  <View
-                    key={key}
-                    className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm mb-3"
-                  >
-                    <Image
-                      source={{ uri: photo.uri }}
-                      className="w-full h-48 rounded-xl mb-3"
-                      resizeMode="cover"
-                    />
-                    <ThemedText type="small" className="text-xs font-mono">
-                      Key: {key}
-                    </ThemedText>
-                    <ThemedText type="small" className="text-xs font-mono">
-                      File: {photo.fileName}
-                    </ThemedText>
-                    <ThemedText type="small" className="text-xs font-mono">
-                      Stored: {new Date(photo.timestamp).toLocaleTimeString()}
-                    </ThemedText>
-                  </View>
-                ))}
-                {storedCount === 0 && (
-                  <ThemedText className="text-center text-slate-400">
-                    No photos in storage yet.
-                  </ThemedText>
-                )}
-              </ScrollView>
-            )}
           </View>
         </View>
       </ScreenWrapper>

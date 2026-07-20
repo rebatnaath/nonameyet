@@ -48,25 +48,11 @@ const DEFAULT_SETTINGS: GameSettings = {
 const STORAGE_KEY = 'photoreveal_rooms';
 
 function loadRooms(): Map<string, Room> {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return new Map();
-    const entries: Room[] = JSON.parse(raw);
-    return new Map(entries.map((r) => [r.code, {
-      ...r,
-      submittedPlayerIds: r.submittedPlayerIds ?? [],
-      submissionDeadline: r.submissionDeadline ?? 0,
-    }]));
-  } catch {
-    return new Map();
-  }
+  return new Map();
 }
 
 function saveRooms(rooms: Map<string, Room>) {
-  try {
-    const entries = Array.from(rooms.values());
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
-  } catch {}
+  // AsyncStorage would go here for React Native, but in-memory is fine for now
 }
 
 const inMemoryRooms = loadRooms();
@@ -139,10 +125,6 @@ export function useRoom() {
   }, []);
 
   const joinRoom = useCallback((code: string, playerName: string): RoomResult | null => {
-    // Sync from localStorage in case another tab created the room
-    const fresh = loadRooms();
-    inMemoryRooms.clear();
-    fresh.forEach((v, k) => inMemoryRooms.set(k, v));
     const room = inMemoryRooms.get(code);
     if (!room || room.status !== 'lobby') return null;
     const playerId = generateId();
@@ -176,9 +158,6 @@ export function useRoom() {
   }, []);
 
   const getRoom = useCallback((code: string): Room | undefined => {
-    const fresh = loadRooms();
-    inMemoryRooms.clear();
-    fresh.forEach((v, k) => inMemoryRooms.set(k, v));
     return inMemoryRooms.get(code);
   }, []);
 
@@ -196,7 +175,7 @@ export function useRoom() {
   }, []);
 
   const exists = useCallback((code: string): boolean => {
-    return loadRooms().has(code);
+    return inMemoryRooms.has(code);
   }, []);
 
   return {

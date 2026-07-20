@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { View, Pressable, Image, ScrollView } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useLocalSearchParams } from 'expo-router';
+import { ScreenWrapper } from '@/components/screen-wrapper';
 import Animated, { FadeInDown, ZoomIn } from 'react-native-reanimated';
 
 import { ThemedText } from '@/components/themed-text';
@@ -17,8 +17,7 @@ export default function RevealScreen() {
   const photoEntries = Array.from(photos.entries());
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-950">
-      <Stack.Screen options={{ headerShown: false, gestureEnabled: false }} />
+    <ScreenWrapper options={{ headerShown: false, gestureEnabled: false }}>
       <ScrollView className="flex-1 px-6 py-8">
         <View className="w-full max-w-md mx-auto items-center gap-6">
           <Animated.View entering={FadeInDown.duration(600)} className="items-center">
@@ -74,6 +73,6 @@ export default function RevealScreen() {
           )}
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </ScreenWrapper>
   );
 }

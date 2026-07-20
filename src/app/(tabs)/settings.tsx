@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Switch, Text } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
+import { ScreenWrapper } from '@/components/screen-wrapper';
 import { useColorScheme } from 'nativewind';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
@@ -12,8 +12,7 @@ const SettingsScreen: React.FC = () => {
   const isDark = colorScheme === 'dark';
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-950">
-      <Stack.Screen options={{ headerShown: false }} />
+    <ScreenWrapper options={{ headerShown: false }}>
       
       <View className="flex-1 px-6 py-12 w-full max-w-md mx-auto">
         
@@ -65,7 +64,7 @@ const SettingsScreen: React.FC = () => {
         </Animated.View>
 
       </View>
-    </SafeAreaView>
+    </ScreenWrapper>
   );
 };
 

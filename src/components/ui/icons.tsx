@@ -12,3 +12,7 @@ export const SparklesIcon: React.FC<{ size?: number; color?: string }> = ({ size
 export const UsersIcon: React.FC<{ size?: number; color?: string }> = ({ size = 20, color = 'currentColor' }) => {
   return <Ionicons name="people-outline" size={size} color={color} />;
 };
+
+export const ImageIcon: React.FC<{ size?: number; color?: string }> = ({ size = 24, color = 'currentColor' }) => {
+  return <Ionicons name="image-outline" size={size} color={color} />;
+};

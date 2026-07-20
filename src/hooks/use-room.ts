@@ -11,7 +11,7 @@ export type Theme = 'After Party' | 'Nature' | 'Workplace' | 'Hometown-Country' 
 export type SkipCountMode = 'fixed' | 'random';
 export type SkipVisibility = 'visible' | 'hidden';
 export type PunishmentMode = 'predefined' | 'wheel' | 'custom';
-export type RoomStatus = 'lobby' | 'uploading' | 'revealing' | 'finished';
+export type RoomStatus = 'lobby' | 'uploading' | 'revealing' | 'finished' | 'closed';
 
 export type GameSettings = {
   theme: Theme;
@@ -24,6 +24,9 @@ export type GameSettings = {
   currentRevealIndex?: number;
   askerId?: string;
   photos?: Record<string, string>;
+  skips?: Record<string, number>;
+  punishedPlayerId?: string;
+  activePunishmentText?: string;
 };
 
 export type Room = {
@@ -245,8 +248,23 @@ export function useRoom() {
       room.settings.currentRevealIndex = 0;
       
       const owner = order[0];
-      const others = room.players.filter(p => p.id !== owner);
-      room.settings.askerId = others.length > 0 ? others[Math.floor(Math.random() * others.length)].id : undefined;
+      const ownerIdx = room.players.findIndex(p => p.id === owner);
+      const askerIdx = ownerIdx !== -1 ? (ownerIdx + 1) % room.players.length : 0;
+      room.settings.askerId = room.players[askerIdx]?.id;
+
+      // Initialize player skips
+      const playerSkips: Record<string, number> = {};
+      room.players.forEach(p => {
+        if (room.settings.skipCountMode === 'fixed') {
+          playerSkips[p.id] = room.settings.fixedSkipCount;
+        } else {
+          // Secretly assign a random count between 1 and 5
+          playerSkips[p.id] = Math.floor(Math.random() * 5) + 1;
+        }
+      });
+      room.settings.skips = playerSkips;
+      room.settings.punishedPlayerId = undefined;
+      room.settings.activePunishmentText = undefined;
     }
     
     await supabase.from('rooms').update({
@@ -278,8 +296,72 @@ export function useRoom() {
     } else {
       room.settings.currentRevealIndex = nextIdx;
       const owner = room.settings.revealOrder[nextIdx];
-      const others = room.players.filter(p => p.id !== owner);
-      room.settings.askerId = others.length > 0 ? others[Math.floor(Math.random() * others.length)].id : undefined;
+      const ownerIdx = room.players.findIndex(p => p.id === owner);
+      const askerIdx = ownerIdx !== -1 ? (ownerIdx + 1) % room.players.length : 0;
+      room.settings.askerId = room.players[askerIdx]?.id;
+      await supabase.from('rooms').update({ settings: room.settings }).eq('code', code);
+    }
+    notify();
+  }, []);
+
+  const skipTurn = useCallback(async (code: string, playerId: string) => {
+    const room = inMemoryRooms.get(code);
+    if (!room || !room.settings.skips || !room.settings.revealOrder) return;
+
+    const currentSkips = room.settings.skips[playerId] ?? 0;
+    
+    if (currentSkips > 0) {
+      room.settings.skips[playerId] = currentSkips - 1;
+      
+      // Advance to the next photo
+      const nextIdx = (room.settings.currentRevealIndex ?? 0) + 1;
+      if (nextIdx >= room.settings.revealOrder.length) {
+        room.status = 'finished';
+        await supabase.from('rooms').update({ status: 'finished', settings: room.settings }).eq('code', code);
+      } else {
+        room.settings.currentRevealIndex = nextIdx;
+        const owner = room.settings.revealOrder[nextIdx];
+        const ownerIdx = room.players.findIndex(p => p.id === owner);
+        const askerIdx = ownerIdx !== -1 ? (ownerIdx + 1) % room.players.length : 0;
+        room.settings.askerId = room.players[askerIdx]?.id;
+        await supabase.from('rooms').update({ settings: room.settings }).eq('code', code);
+      }
+    } else {
+      // Trigger punishment
+      room.settings.punishedPlayerId = playerId;
+      const defaultPunishments = [
+        "Sing a song of the group's choosing!",
+        "Do 10 push-ups live right now!",
+        "Show the most recent photo in your gallery that isn't this one!",
+        "Answer the next question with absolute, unfiltered truth!",
+        "Impersonate another player in the lobby until the next round!",
+        "Let the group send a text to anyone in your contact list!",
+        "Tell a joke, and if no one laughs, do 5 squats!"
+      ];
+      room.settings.activePunishmentText = defaultPunishments[Math.floor(Math.random() * defaultPunishments.length)];
+      await supabase.from('rooms').update({ settings: room.settings }).eq('code', code);
+    }
+    notify();
+  }, []);
+
+  const resolvePunishment = useCallback(async (code: string) => {
+    const room = inMemoryRooms.get(code);
+    if (!room || !room.settings.revealOrder) return;
+
+    room.settings.punishedPlayerId = undefined;
+    room.settings.activePunishmentText = undefined;
+
+    // Advance to the next photo
+    const nextIdx = (room.settings.currentRevealIndex ?? 0) + 1;
+    if (nextIdx >= room.settings.revealOrder.length) {
+      room.status = 'finished';
+      await supabase.from('rooms').update({ status: 'finished', settings: room.settings }).eq('code', code);
+    } else {
+      room.settings.currentRevealIndex = nextIdx;
+      const owner = room.settings.revealOrder[nextIdx];
+      const ownerIdx = room.players.findIndex(p => p.id === owner);
+      const askerIdx = ownerIdx !== -1 ? (ownerIdx + 1) % room.players.length : 0;
+      room.settings.askerId = room.players[askerIdx]?.id;
       await supabase.from('rooms').update({ settings: room.settings }).eq('code', code);
     }
     notify();
@@ -294,12 +376,29 @@ export function useRoom() {
     room.settings.currentRevealIndex = undefined;
     room.settings.askerId = undefined;
     room.settings.photos = undefined;
+    room.settings.skips = undefined;
+    room.settings.punishedPlayerId = undefined;
+    room.settings.activePunishmentText = undefined;
     
     await supabase.from('rooms').update({ 
       status: 'lobby', 
       submitted_player_ids: [],
       settings: room.settings 
     }).eq('code', code);
+    notify();
+  }, []);
+
+  const closeRoom = useCallback(async (code: string) => {
+    const room = inMemoryRooms.get(code);
+    if (!room) return;
+    room.status = 'closed';
+    
+    // Broadcast the closed state, then clean up
+    await supabase.from('rooms').update({ status: 'closed' }).eq('code', code);
+    
+    // Optional: After a brief delay, we could actually delete the room from the DB here
+    // setTimeout(() => supabase.from('rooms').delete().eq('code', code), 2000);
+    
     notify();
   }, []);
 
@@ -359,5 +458,8 @@ export function useRoom() {
     getRoom,
     subscribeToRoom,
     exists,
+    skipTurn,
+    resolvePunishment,
+    closeRoom,
   };
 }

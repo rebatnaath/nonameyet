@@ -23,4 +23,21 @@ Please make sure to run the following command to install the missing libraries t
 
 ```bash
 npx expo install @expo/vector-icons expo-image-picker
+
+npm install @supabase/supabase-js
+
+npm install react-native-url-polyfill
+
+npm install expo@54.0.8
+
+
+npx expo install --fix
+
+# istall docto
+
+npx expo-doctor
+
+npx expo install babel-preset-expo
+
+npm install base64-arraybuffer expo-file-system
 ```

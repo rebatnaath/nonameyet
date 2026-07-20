@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Pressable } from 'react-native';
+import { View, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import Animated, { FadeInDown, ZoomIn } from 'react-native-reanimated';
@@ -48,27 +48,27 @@ const HomeScreen: React.FC = () => {
         {/* Actions/Buttons */}
         <View className="w-full gap-4 mb-8">
           <Animated.View entering={FadeInDown.delay(500).duration(600)} className="w-full">
-            <Pressable 
+            <TouchableOpacity 
               onPress={() => router.push('/host' as any)}
-              className="w-full bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 rounded-2xl py-4 flex-row items-center justify-center gap-2 shadow-lg shadow-indigo-600/30 border border-indigo-500/20 active:scale-[0.98] transition-all"
+              className="w-full bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 rounded-2xl py-4 flex-row items-center justify-center gap-2 shadow-lg shadow-indigo-600/30 border border-indigo-500/20 active:opacity-80"
             >
               <ThemedText className="text-white text-lg font-bold tracking-wide">
                 Host a Game
               </ThemedText>
               <SparklesIcon size={20} color="#ffffff" />
-            </Pressable>
+            </TouchableOpacity>
           </Animated.View>
 
           <Animated.View entering={FadeInDown.delay(650).duration(600)} className="w-full">
-            <Pressable
+            <TouchableOpacity
               onPress={() => router.push('/join' as any)}
-              className="w-full bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 active:bg-slate-100 dark:active:bg-slate-800/50 rounded-2xl py-4 flex-row items-center justify-center gap-2 border border-slate-200 dark:border-slate-800 shadow-sm active:scale-[0.98] transition-all"
+              className="w-full bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 active:bg-slate-100 dark:active:bg-slate-800/50 rounded-2xl py-4 flex-row items-center justify-center gap-2 border border-slate-200 dark:border-slate-800 shadow-sm active:opacity-80"
             >
               <ThemedText className="text-slate-900 dark:text-white text-lg font-bold tracking-wide">
                 Join a Lobby
               </ThemedText>
               <UsersIcon size={20} color={buttonSecondaryIconColor} />
-            </Pressable>
+            </TouchableOpacity>
           </Animated.View>
         </View>
 

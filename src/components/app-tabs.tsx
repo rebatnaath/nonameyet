@@ -1,4 +1,4 @@
-import { NativeTabs } from 'expo-router/unstable-native-tabs';
+import { NativeTabs, Label, Icon } from 'expo-router/unstable-native-tabs';
 import { useColorScheme } from 'nativewind';
 
 import { Colors } from '@/constants/theme';
@@ -16,11 +16,8 @@ export default function AppTabs() {
       labelStyle={{ selected: { color: colors.text } }}>
       {TabRoutes.map((tab) => (
         <NativeTabs.Trigger key={tab.name} name={tab.name}>
-          <NativeTabs.Trigger.Label>{tab.label}</NativeTabs.Trigger.Label>
-          <NativeTabs.Trigger.Icon
-            src={tab.icon}
-            renderingMode="template"
-          />
+          <Label>{tab.label}</Label>
+          <Icon src={tab.icon} />
         </NativeTabs.Trigger>
       ))}
     </NativeTabs>

@@ -1,8 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { View, Pressable, Image, ScrollView } from 'react-native';
+import { View, TouchableOpacity, Image, ScrollView } from 'react-native';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import { ScreenWrapper } from '@/components/screen-wrapper';
 import Animated, { FadeInDown, ZoomIn } from 'react-native-reanimated';
+import * as FileSystem from 'expo-file-system/legacy';
+import { decode } from 'base64-arraybuffer';
+import { supabase } from '@/lib/supabase';
 
 import { ThemedText } from '@/components/themed-text';
 import { PhotoPicker } from '@/components/photo-picker';
@@ -13,7 +16,7 @@ export default function UploadScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ room?: string; playerId?: string; theme?: string; duration?: string }>();
   const { storePhoto, photos } = useTempPhotoStorage();
-  const { getRoom, submitPhoto } = useRoom();
+  const { getRoom, submitPhoto, subscribeToRoom, addPhotoUrl } = useRoom();
 
   const roomCode = params.room ?? '';
   const playerId = params.playerId ?? '';
@@ -29,6 +32,12 @@ export default function UploadScreen() {
   const [showDebug, setShowDebug] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    if (roomCode) {
+      return subscribeToRoom(roomCode);
+    }
+  }, [roomCode, subscribeToRoom]);
 
   useEffect(() => {
     timerRef.current = setInterval(() => {
@@ -82,7 +91,7 @@ export default function UploadScreen() {
     setSelectedPhoto(null);
   }, []);
 
-  const handleSubmit = useCallback(() => {
+  const handleSubmit = useCallback(async () => {
     if (!selectedPhoto) return;
     const pid = playerId || 'unknown';
     const key = `${roomCode}_${pid}`;
@@ -90,14 +99,30 @@ export default function UploadScreen() {
       ...selectedPhoto,
       timestamp: Date.now(),
     });
+    
+    try {
+      const base64 = await FileSystem.readAsStringAsync(selectedPhoto.uri, { encoding: 'base64' });
+      const filePath = `${roomCode}/${pid}.jpg`;
+      
+      await supabase.storage.from('game_photos').upload(filePath, decode(base64), {
+        contentType: selectedPhoto.mimeType || 'image/jpeg',
+        upsert: true
+      });
+      
+      const { data: urlData } = supabase.storage.from('game_photos').getPublicUrl(filePath);
+      await addPhotoUrl(roomCode, pid, urlData.publicUrl);
+    } catch (err) {
+      console.error('Failed to upload photo to Supabase:', err);
+    }
+    
     if (roomCode && pid) submitPhoto(roomCode, pid);
     setSubmitted(true);
     if (timerRef.current) clearInterval(timerRef.current);
-  }, [selectedPhoto, storePhoto, roomCode, playerId, submitPhoto]);
+  }, [selectedPhoto, storePhoto, roomCode, playerId, submitPhoto, addPhotoUrl]);
 
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;
-  const timerColor = timeLeft <= 10 ? 'text-red-500' : 'text-slate-900 dark:text-white';
+  const timerStyle = timeLeft <= 10 ? { color: '#ef4444' } : {};
 
   const storedCount = Array.from(photos.entries()).length;
 
@@ -121,14 +146,14 @@ export default function UploadScreen() {
               </View>
             </Animated.View>
 
-            <Pressable
+            <TouchableOpacity
               onPress={() => setShowDebug(!showDebug)}
               className="bg-slate-200 dark:bg-slate-800 rounded-xl py-2 px-6 mb-6 active:opacity-70"
             >
               <ThemedText className="text-sm font-semibold">
                 {showDebug ? 'Hide' : 'Show'} Stored Photos ({storedCount})
               </ThemedText>
-            </Pressable>
+            </TouchableOpacity>
 
             {showDebug && (
               <View className="w-full max-w-sm gap-4">
@@ -193,7 +218,10 @@ export default function UploadScreen() {
             <ThemedText type="small" className="text-slate-400 mb-2">
               Time Remaining
             </ThemedText>
-            <ThemedText className={`text-5xl font-black tabular-nums ${timerColor}`}>
+            <ThemedText 
+              className="text-5xl font-black tabular-nums text-slate-900 dark:text-white"
+              style={timerStyle}
+            >
               {minutes}:{seconds.toString().padStart(2, '0')}
             </ThemedText>
           </View>
@@ -225,14 +253,14 @@ export default function UploadScreen() {
         {/* Submit Button */}
         {selectedPhoto && !timedOut && (
           <Animated.View entering={FadeInDown.delay(450).duration(600)}>
-            <Pressable
+            <TouchableOpacity
               onPress={handleSubmit}
-              className="w-full bg-indigo-600 active:bg-indigo-700 rounded-2xl py-4 items-center shadow-lg shadow-indigo-600/30 active:scale-[0.98] transition-all"
+              className="w-full bg-indigo-600 rounded-2xl py-4 items-center shadow-lg shadow-indigo-600/30 active:opacity-80"
             >
               <ThemedText className="text-white text-lg font-bold tracking-wide">
                 Submit Photo
               </ThemedText>
-            </Pressable>
+            </TouchableOpacity>
           </Animated.View>
         )}
       </View>

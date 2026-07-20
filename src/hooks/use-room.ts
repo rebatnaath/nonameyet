@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
+import { supabase } from '@/lib/supabase';
 
 export type Player = {
   id: string;
@@ -19,6 +20,10 @@ export type GameSettings = {
   skipVisibility: SkipVisibility;
   punishmentMode: PunishmentMode;
   minPlayers: number;
+  revealOrder?: string[];
+  currentRevealIndex?: number;
+  askerId?: string;
+  photos?: Record<string, string>;
 };
 
 export type Room = {
@@ -107,7 +112,7 @@ export function useRoom() {
     } catch {}
   }, []);
 
-  const createRoom = useCallback((hostName: string): RoomResult => {
+  const createRoom = useCallback(async (hostName: string): Promise<RoomResult> => {
     const code = generateRoomCode();
     const hostId = generateId();
     const room: Room = {
@@ -119,41 +124,105 @@ export function useRoom() {
       submittedPlayerIds: [],
       submissionDeadline: 0,
     };
+
+    await supabase.from('rooms').insert({
+      code,
+      host_id: hostId,
+      status: room.status,
+      settings: room.settings
+    });
+
+    await supabase.from('players').insert({
+      id: hostId,
+      room_code: code,
+      name: hostName,
+      is_host: true
+    });
+
     inMemoryRooms.set(code, room);
     notify();
     return { room, playerId: hostId };
   }, []);
 
-  const joinRoom = useCallback((code: string, playerName: string): RoomResult | null => {
-    const room = inMemoryRooms.get(code);
-    if (!room || room.status !== 'lobby') return null;
+  const joinRoom = useCallback(async (code: string, playerName: string): Promise<RoomResult | null> => {
     const playerId = generateId();
-    room.players.push({ id: playerId, name: playerName, isHost: false });
+    
+    const { error } = await supabase.from('players').insert({
+      id: playerId,
+      room_code: code,
+      name: playerName,
+      is_host: false
+    });
+
+    if (error) {
+      console.error('Failed to join room in Supabase', error);
+      return null;
+    }
+
+    let room = inMemoryRooms.get(code);
+    if (!room) {
+      const { data: roomData } = await supabase.from('rooms').select('*').eq('code', code).single();
+      const { data: playersData } = await supabase.from('players').select('*').eq('room_code', code);
+      
+      if (!roomData) return null;
+      
+      room = {
+        code: roomData.code,
+        hostId: roomData.host_id,
+        players: playersData?.map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          isHost: p.is_host
+        })) || [],
+        settings: roomData.settings,
+        status: roomData.status,
+        submittedPlayerIds: roomData.submitted_player_ids || [],
+        submissionDeadline: roomData.submission_deadline || 0,
+      };
+    } else {
+      room.players.push({ id: playerId, name: playerName, isHost: false });
+    }
+
+    inMemoryRooms.set(code, room);
     notify();
     return { room, playerId };
   }, []);
 
-  const leaveRoom = useCallback((code: string, playerId: string) => {
+  const leaveRoom = useCallback(async (code: string, playerId: string) => {
     const room = inMemoryRooms.get(code);
     if (!room) return;
     room.players = room.players.filter((p) => p.id !== playerId);
-    if (room.players.length === 0) inMemoryRooms.delete(code);
+    if (room.players.length === 0) {
+      inMemoryRooms.delete(code);
+      await supabase.from('rooms').delete().eq('code', code);
+    }
+    
+    await supabase.from('players').delete().eq('id', playerId);
     notify();
   }, []);
 
-  const updateSettings = useCallback((code: string, settings: Partial<GameSettings>) => {
+  const updateSettings = useCallback(async (code: string, settings: Partial<GameSettings>) => {
     const room = inMemoryRooms.get(code);
     if (!room) return;
     room.settings = { ...room.settings, ...settings };
+    
+    await supabase.from('rooms').update({ settings: room.settings }).eq('code', code);
     notify();
   }, []);
 
-  const startGame = useCallback((code: string) => {
+  const startGame = useCallback(async (code: string) => {
     const room = inMemoryRooms.get(code);
     if (!room) return;
     room.status = 'uploading';
     room.submittedPlayerIds = [];
     room.submissionDeadline = Date.now() + 90000; // 90 seconds
+    
+    await supabase.from('rooms').update({
+      status: room.status,
+      submitted_player_ids: room.submittedPlayerIds,
+      submission_deadline: room.submissionDeadline
+    }).eq('code', code);
+    
     notify();
   }, []);
 
@@ -161,7 +230,7 @@ export function useRoom() {
     return inMemoryRooms.get(code);
   }, []);
 
-  const submitPhoto = useCallback((code: string, playerId: string) => {
+  const submitPhoto = useCallback(async (code: string, playerId: string) => {
     const room = inMemoryRooms.get(code);
     if (!room) return;
     if (!room.submittedPlayerIds.includes(playerId)) {
@@ -170,12 +239,111 @@ export function useRoom() {
     const allSubmitted = room.submittedPlayerIds.length >= room.players.length;
     if (allSubmitted) {
       room.status = 'revealing';
+      
+      const order = [...room.submittedPlayerIds].sort(() => Math.random() - 0.5);
+      room.settings.revealOrder = order;
+      room.settings.currentRevealIndex = 0;
+      
+      const owner = order[0];
+      const others = room.players.filter(p => p.id !== owner);
+      room.settings.askerId = others.length > 0 ? others[Math.floor(Math.random() * others.length)].id : undefined;
+    }
+    
+    await supabase.from('rooms').update({
+      submitted_player_ids: room.submittedPlayerIds,
+      ...(allSubmitted ? { status: 'revealing', settings: room.settings } : {})
+    }).eq('code', code);
+    
+    notify();
+  }, []);
+
+  const addPhotoUrl = useCallback(async (code: string, playerId: string, url: string) => {
+    const room = inMemoryRooms.get(code);
+    if (!room) return;
+    const photos = room.settings.photos || {};
+    photos[playerId] = url;
+    room.settings.photos = photos;
+    await supabase.from('rooms').update({ settings: room.settings }).eq('code', code);
+    notify();
+  }, []);
+
+  const nextRevealPhoto = useCallback(async (code: string) => {
+    const room = inMemoryRooms.get(code);
+    if (!room || !room.settings.revealOrder) return;
+    
+    const nextIdx = (room.settings.currentRevealIndex ?? 0) + 1;
+    if (nextIdx >= room.settings.revealOrder.length) {
+      room.status = 'finished';
+      await supabase.from('rooms').update({ status: 'finished' }).eq('code', code);
+    } else {
+      room.settings.currentRevealIndex = nextIdx;
+      const owner = room.settings.revealOrder[nextIdx];
+      const others = room.players.filter(p => p.id !== owner);
+      room.settings.askerId = others.length > 0 ? others[Math.floor(Math.random() * others.length)].id : undefined;
+      await supabase.from('rooms').update({ settings: room.settings }).eq('code', code);
     }
     notify();
   }, []);
 
-  const exists = useCallback((code: string): boolean => {
-    return inMemoryRooms.has(code);
+  const resetGame = useCallback(async (code: string) => {
+    const room = inMemoryRooms.get(code);
+    if (!room) return;
+    room.status = 'lobby';
+    room.submittedPlayerIds = [];
+    room.settings.revealOrder = undefined;
+    room.settings.currentRevealIndex = undefined;
+    room.settings.askerId = undefined;
+    room.settings.photos = undefined;
+    
+    await supabase.from('rooms').update({ 
+      status: 'lobby', 
+      submitted_player_ids: [],
+      settings: room.settings 
+    }).eq('code', code);
+    notify();
+  }, []);
+
+  const subscribeToRoom = useCallback((code: string) => {
+    const fetchRoomState = async () => {
+      const { data: roomData } = await supabase.from('rooms').select('*').eq('code', code).maybeSingle();
+      const { data: playersData } = await supabase.from('players').select('*').eq('room_code', code);
+      if (!roomData) return;
+      
+      const room: Room = {
+        code: roomData.code,
+        hostId: roomData.host_id,
+        players: playersData?.map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          isHost: p.is_host
+        })) || [],
+        settings: roomData.settings,
+        status: roomData.status,
+        submittedPlayerIds: roomData.submitted_player_ids || [],
+        submissionDeadline: roomData.submission_deadline || 0,
+      };
+      
+      inMemoryRooms.set(code, room);
+      notify();
+    };
+
+    const channel = supabase.channel(`room_${code}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms', filter: `code=eq.${code}` }, fetchRoomState)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'players', filter: `room_code=eq.${code}` }, fetchRoomState)
+      .subscribe();
+
+    // Initial fetch to sync up
+    fetchRoomState();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const exists = useCallback(async (code: string): Promise<boolean> => {
+    if (inMemoryRooms.has(code)) return true;
+    const { data } = await supabase.from('rooms').select('code').eq('code', code).maybeSingle();
+    return !!data;
   }, []);
 
   return {
@@ -185,7 +353,11 @@ export function useRoom() {
     updateSettings,
     startGame,
     submitPhoto,
+    addPhotoUrl,
+    nextRevealPhoto,
+    resetGame,
     getRoom,
+    subscribeToRoom,
     exists,
   };
 }

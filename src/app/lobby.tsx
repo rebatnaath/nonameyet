@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { View, TouchableOpacity, ScrollView } from 'react-native';
+import { View, TouchableOpacity, ScrollView, Image } from 'react-native';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import { ScreenWrapper } from '@/components/screen-wrapper';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -146,12 +146,13 @@ export default function LobbyScreen() {
                   style={idx < room.players.length - 1 ? { borderBottomWidth: 1, borderBottomColor: '#f1f5f9' } : {}}
                 >
                   <View 
-                    className="w-8 h-8 rounded-full items-center justify-center"
+                    className="w-8 h-8 rounded-full items-center justify-center overflow-hidden"
                     style={player.isHost ? { backgroundColor: '#e0e7ff' } : { backgroundColor: '#f1f5f9' }}
                   >
-                    <ThemedText className="text-sm font-bold">
-                      {player.id === currentPlayerId ? '★' : '●'}
-                    </ThemedText>
+                    <Image 
+                      source={{ uri: `https://robohash.org/${player.id}?set=set4&size=100x100` }} 
+                      style={{ width: 32, height: 32 }}
+                    />
                   </View>
                   <View className="flex-row items-center gap-2">
                     <ThemedText className="font-semibold">

@@ -137,7 +137,12 @@ export default function RevealScreen() {
                     </View>
                   )}
                   
-                  <View className="bg-indigo-50 dark:bg-indigo-900/30 w-full rounded-xl p-4 items-center mb-2">
+                  <View className="bg-indigo-50 dark:bg-indigo-900/30 w-full rounded-xl p-4 flex-row items-center justify-center gap-3 mb-2">
+                    {owner && (
+                      <View className="w-8 h-8 rounded-full overflow-hidden bg-white">
+                        <Image source={{ uri: `https://robohash.org/${owner.id}?set=set4&size=100x100` }} style={{ width: 32, height: 32 }} />
+                      </View>
+                    )}
                     <ThemedText className="text-indigo-600 dark:text-indigo-400 font-bold text-lg">
                       Photo uploaded by {owner?.name || 'Unknown'}
                     </ThemedText>
@@ -145,9 +150,14 @@ export default function RevealScreen() {
                   
                   {asker && (
                     <View className="w-full pt-4 border-t border-slate-100 dark:border-slate-800/50 items-center">
-                      <ThemedText className="text-center font-semibold text-slate-700 dark:text-slate-300">
-                        <ThemedText className="font-bold text-indigo-500">{asker.name}</ThemedText>, ask a question!
-                      </ThemedText>
+                      <View className="flex-row items-center gap-2 mb-1">
+                        <View className="w-8 h-8 rounded-full overflow-hidden bg-white">
+                          <Image source={{ uri: `https://robohash.org/${asker.id}?set=set4&size=100x100` }} style={{ width: 32, height: 32 }} />
+                        </View>
+                        <ThemedText className="text-center font-semibold text-slate-700 dark:text-slate-300">
+                          <ThemedText className="font-bold text-indigo-500">{asker.name}</ThemedText>, ask a question!
+                        </ThemedText>
+                      </View>
                       <ThemedText type="small" className="text-center text-slate-400 mt-1">
                         The question rotation will go clockwise after them.
                       </ThemedText>

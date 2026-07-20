@@ -1,4 +1,4 @@
-import { View, Pressable, Image } from 'react-native';
+import { View, TouchableOpacity, Image } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 
@@ -12,7 +12,6 @@ type PhotoPickerProps = {
 
 export function PhotoPicker({ onPhotoSelect, onPhotoRemove, selectedUri }: PhotoPickerProps) {
   const [permissionResponse, requestPermission] = ImagePicker.useMediaLibraryPermissions();
-  const [cameraPermissionResponse, requestCameraPermission] = ImagePicker.useCameraPermissions();
 
   const pickFromGallery = async () => {
     if (!permissionResponse?.granted) {
@@ -36,26 +35,6 @@ export function PhotoPicker({ onPhotoSelect, onPhotoRemove, selectedUri }: Photo
     }
   };
 
-  const takePhoto = async () => {
-    if (!cameraPermissionResponse?.granted) {
-      const result = await requestCameraPermission();
-      if (!result.granted) return;
-    }
-
-    const result = await ImagePicker.launchCameraAsync({
-      quality: 0.8,
-      allowsEditing: false,
-    });
-
-    if (!result.canceled && result.assets[0]) {
-      const asset = result.assets[0];
-      onPhotoSelect({
-        uri: asset.uri,
-        fileName: asset.fileName ?? `photo_${Date.now()}.jpg`,
-        mimeType: asset.mimeType ?? 'image/jpeg',
-      });
-    }
-  };
 
   if (selectedUri) {
     return (
@@ -67,31 +46,32 @@ export function PhotoPicker({ onPhotoSelect, onPhotoRemove, selectedUri }: Photo
             resizeMode="cover"
           />
         </View>
-        <Pressable
+        <TouchableOpacity
           onPress={onPhotoRemove}
-          className="bg-red-500/10 border border-red-400/30 rounded-xl py-2 px-5 active:opacity-70"
+          className="bg-red-500/10 border border-red-400/30 rounded-full py-3 px-6 active:opacity-70 mt-2"
         >
-          <ThemedText className="text-red-500 font-semibold text-sm">Remove & Choose Again</ThemedText>
-        </Pressable>
+          <ThemedText className="text-red-500 font-bold text-sm text-center">Remove & Pick Again</ThemedText>
+        </TouchableOpacity>
       </Animated.View>
     );
   }
 
   return (
-    <View className="items-center gap-4">
-      <Pressable
+    <View className="items-center justify-center w-full max-w-sm">
+      <TouchableOpacity
         onPress={pickFromGallery}
-        className="w-full bg-indigo-600 active:bg-indigo-700 rounded-2xl py-4 flex-row items-center justify-center gap-2 shadow-lg shadow-indigo-600/30"
+        className="w-full bg-slate-100 dark:bg-slate-800/80 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-[32px] h-64 items-center justify-center p-6 active:opacity-70"
       >
-        <ThemedText className="text-white text-lg font-bold">Pick from Gallery</ThemedText>
-      </Pressable>
-
-      <Pressable
-        onPress={takePhoto}
-        className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl py-4 flex-row items-center justify-center gap-2 active:opacity-70"
-      >
-        <ThemedText className="text-slate-900 dark:text-white text-lg font-bold">Take a Photo</ThemedText>
-      </Pressable>
+        <View className="w-16 h-16 bg-indigo-100 dark:bg-indigo-900/30 rounded-full items-center justify-center mb-4">
+          <ThemedText className="text-2xl">🖼️</ThemedText>
+        </View>
+        <ThemedText className="text-slate-900 dark:text-white text-xl font-black mb-2 text-center">
+          Choose an Image
+        </ThemedText>
+        <ThemedText className="text-slate-500 dark:text-slate-400 text-center text-sm px-4">
+          Tap here to browse your gallery
+        </ThemedText>
+      </TouchableOpacity>
     </View>
   );
 }

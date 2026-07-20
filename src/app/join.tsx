@@ -13,15 +13,16 @@ export default function JoinScreen() {
   const [name, setName] = useState('');
   const [error, setError] = useState('');
 
-  const handleJoin = () => {
+  const handleJoin = async () => {
     const trimmedCode = code.trim().toUpperCase();
     const trimmedName = name.trim();
     if (!trimmedCode || !trimmedName) return;
-    if (!exists(trimmedCode)) {
+    const roomExists = await exists(trimmedCode);
+    if (!roomExists) {
       setError('Room not found. Check the code and try again.');
       return;
     }
-    const result = joinRoom(trimmedCode, trimmedName);
+    const result = await joinRoom(trimmedCode, trimmedName);
     if (!result) {
       setError('Cannot join this room. It may have already started.');
       return;

@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
+import { supabase } from '@/lib/supabase';
 
 export type Player = {
   id: string;
@@ -107,7 +108,7 @@ export function useRoom() {
     } catch {}
   }, []);
 
-  const createRoom = useCallback((hostName: string): RoomResult => {
+  const createRoom = useCallback(async (hostName: string): Promise<RoomResult> => {
     const code = generateRoomCode();
     const hostId = generateId();
     const room: Room = {
@@ -119,16 +120,66 @@ export function useRoom() {
       submittedPlayerIds: [],
       submissionDeadline: 0,
     };
+
+    await supabase.from('rooms').insert({
+      code,
+      host_id: hostId,
+      status: room.status,
+      settings: room.settings
+    });
+
+    await supabase.from('players').insert({
+      id: hostId,
+      room_code: code,
+      name: hostName,
+      is_host: true
+    });
+
     inMemoryRooms.set(code, room);
     notify();
     return { room, playerId: hostId };
   }, []);
 
-  const joinRoom = useCallback((code: string, playerName: string): RoomResult | null => {
-    const room = inMemoryRooms.get(code);
-    if (!room || room.status !== 'lobby') return null;
+  const joinRoom = useCallback(async (code: string, playerName: string): Promise<RoomResult | null> => {
     const playerId = generateId();
-    room.players.push({ id: playerId, name: playerName, isHost: false });
+    
+    const { error } = await supabase.from('players').insert({
+      id: playerId,
+      room_code: code,
+      name: playerName,
+      is_host: false
+    });
+
+    if (error) {
+      console.error('Failed to join room in Supabase', error);
+      return null;
+    }
+
+    let room = inMemoryRooms.get(code);
+    if (!room) {
+      const { data: roomData } = await supabase.from('rooms').select('*').eq('code', code).single();
+      const { data: playersData } = await supabase.from('players').select('*').eq('room_code', code);
+      
+      if (!roomData) return null;
+      
+      room = {
+        code: roomData.code,
+        hostId: roomData.host_id,
+        players: playersData?.map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          isHost: p.is_host
+        })) || [],
+        settings: roomData.settings,
+        status: roomData.status,
+        submittedPlayerIds: [],
+        submissionDeadline: 0,
+      };
+    } else {
+      room.players.push({ id: playerId, name: playerName, isHost: false });
+    }
+
+    inMemoryRooms.set(code, room);
     notify();
     return { room, playerId };
   }, []);
@@ -174,8 +225,47 @@ export function useRoom() {
     notify();
   }, []);
 
-  const exists = useCallback((code: string): boolean => {
-    return inMemoryRooms.has(code);
+  const subscribeToRoom = useCallback((code: string) => {
+    const fetchRoomState = async () => {
+      const { data: roomData } = await supabase.from('rooms').select('*').eq('code', code).maybeSingle();
+      const { data: playersData } = await supabase.from('players').select('*').eq('room_code', code);
+      if (!roomData) return;
+      
+      const room: Room = {
+        code: roomData.code,
+        hostId: roomData.host_id,
+        players: playersData?.map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          isHost: p.is_host
+        })) || [],
+        settings: roomData.settings,
+        status: roomData.status,
+        submittedPlayerIds: [],
+        submissionDeadline: 0,
+      };
+      
+      inMemoryRooms.set(code, room);
+      notify();
+    };
+
+    const channel = supabase.channel(`room_${code}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms', filter: `code=eq.${code}` }, fetchRoomState)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'players', filter: `room_code=eq.${code}` }, fetchRoomState)
+      .subscribe();
+
+    // Initial fetch to sync up
+    fetchRoomState();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const exists = useCallback(async (code: string): Promise<boolean> => {
+    if (inMemoryRooms.has(code)) return true;
+    const { data } = await supabase.from('rooms').select('code').eq('code', code).maybeSingle();
+    return !!data;
   }, []);
 
   return {
@@ -186,6 +276,7 @@ export function useRoom() {
     startGame,
     submitPhoto,
     getRoom,
+    subscribeToRoom,
     exists,
   };
 }

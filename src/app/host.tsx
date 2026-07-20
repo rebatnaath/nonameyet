@@ -11,10 +11,10 @@ export default function HostScreen() {
   const { createRoom } = useRoom();
   const [name, setName] = useState('');
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     const trimmed = name.trim();
     if (!trimmed) return;
-    const { room, playerId } = createRoom(trimmed);
+    const { room, playerId } = await createRoom(trimmed);
     router.replace(`/lobby?code=${room.code}&playerId=${playerId}`);
   };
 

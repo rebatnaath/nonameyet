@@ -15,15 +15,15 @@ const PUNISHMENTS: PunishmentMode[] = ['predefined', 'wheel', 'custom'];
 export default function LobbyScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ code: string; playerId: string }>();
-  const { getRoom, updateSettings, startGame, leaveRoom } = useRoom();
+  const { getRoom, updateSettings, startGame, leaveRoom, subscribeToRoom } = useRoom();
   const [copied, setCopied] = useState(false);
-  const [pollKey, setPollKey] = useState(0);
 
-  // Poll every 2s to pick up changes from other tabs
+  // Subscribe to real-time updates for the current room
   useEffect(() => {
-    const interval = setInterval(() => setPollKey((n) => n + 1), 2000);
-    return () => clearInterval(interval);
-  }, []);
+    if (params.code) {
+      return subscribeToRoom(params.code);
+    }
+  }, [params.code, subscribeToRoom]);
 
   const room = getRoom(params.code ?? '');
   const currentPlayerId = params.playerId ?? '';
